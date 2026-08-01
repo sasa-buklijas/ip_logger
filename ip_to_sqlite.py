@@ -232,19 +232,15 @@ def uptime_to_db(db: DB, program_start_time: float):
             if last_uptime_row['boot_time'] != boot_time_uts:
                 # can be changed duo to NTP synchronization, usually in first few minutes after boot 
 
-                text: str = f"For {boot_id=} boot_time moved {boot_time_uts - last_uptime_row['boot_time']}"
-                logging.warning(text)
-                
                 # update boot_time to new value
                 db.update_boot_time(last_uptime_row['id'], boot_time_uts)
 
+                text: str = f"For {boot_id=} boot_time moved {boot_time_uts - last_uptime_row['boot_time']}, DB row updated."
+                logging.warning(text)
                 db.add_error(program_start_time, text)
 
             # update row with existing boot_id, leave original boot_time
             db.update_uptime(last_uptime_row['id'], program_start_time)
-
-            # for row with existing boot_id, update to new boot_time_uts
-            #db.update_uptime(last_uptime_row['id'], boot_time_uts)
 
         # new boot
         else:
