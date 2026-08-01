@@ -141,6 +141,9 @@ class DB():
     def update_uptime(self, row_id: int, current_time: float):
         return self._uptime_table.update(dict(id=row_id, last_time_seen=current_time), ['id'])
 
+    def update_boot_time(self, row_id: int, start_time: float):
+        return self._uptime_table.update(dict(id=row_id, boot_time=start_time), ['id'])
+
     def get_uptime_rows(self, limit = None):
         return self._uptime_table.find(order_by='last_time_seen', _limit=limit)
 
@@ -227,19 +230,23 @@ def uptime_to_db(db: DB, program_start_time: float):
     if last_uptime_row:
         if last_uptime_row['boot_id'] == boot_id:
             if last_uptime_row['boot_time'] != boot_time_uts:
-                # can be changed do to NTP synchronization, usually in first few minutes after boot 
+                # can be changed duo to NTP synchronization, usually in first few minutes after boot 
 
-                #text: str = f"{last_uptime_row['boot_time']} not equal {boot_time_uts}, but {last_uptime_row['boot_id']} == {boot_id} Need investigation, should be same"
                 text: str = f"For {boot_id=} boot_time moved {boot_time_uts - last_uptime_row['boot_time']}"
                 logging.warning(text)
+                
+                # update boot_time to new value
+                db.update_boot_time(last_uptime_row['id'], boot_time_uts)
+
                 db.add_error(program_start_time, text)
 
             # update row with existing boot_id, leave original boot_time
-            #db.update_uptime(last_uptime_row['id'], program_start_time)
+            db.update_uptime(last_uptime_row['id'], program_start_time)
 
             # for row with existing boot_id, update to new boot_time_uts
-            db.update_uptime(last_uptime_row['id'], boot_time_uts)
+            #db.update_uptime(last_uptime_row['id'], boot_time_uts)
 
+        # new boot
         else:
             primary_key_id = db.add_uptime(boot_id, boot_time_uts, program_start_time)
 
